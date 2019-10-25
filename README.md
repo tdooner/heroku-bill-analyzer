@@ -12,5 +12,5 @@ cp .env.example .env
 
 ## Usage
 ```bash
-ruby scrape.rb
+ruby scrape.rb -t network >results.tsv
 ```

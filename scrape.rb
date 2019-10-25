@@ -1,5 +1,6 @@
 require 'dotenv'
 require 'selenium-webdriver'
+require 'optparse'
 $stdout.sync = true
 
 def log_in(username, password, driver)
@@ -55,27 +56,47 @@ def dump_personal_bills(driver)
   end
 end
 
-Dotenv.load
+def scrape(options)
+  Dotenv.load
 
-headless = true
-args = []
-args.push('headless') if headless
-options = Selenium::WebDriver::Chrome::Options.new(args: args)
+  args = []
+  args.push('headless') if options[:headless]
+  chrome_options = Selenium::WebDriver::Chrome::Options.new(args: args)
 
-driver = Selenium::WebDriver.for(:chrome, options: options)
+  driver = Selenium::WebDriver.for(:chrome, options: chrome_options)
 
-$stderr.puts "Logging in as #{ENV['HEROKU_USERNAME']}..."
-log_in(ENV['HEROKU_USERNAME'], ENV['HEROKU_PASSWORD'], driver)
+  $stderr.puts "Logging in as #{ENV['HEROKU_USERNAME']}..."
+  log_in(ENV['HEROKU_USERNAME'], ENV['HEROKU_PASSWORD'], driver)
 
-$stderr.puts '  waiting for dashboard to load'
-wait_for_dashboard(driver)
+  $stderr.puts '  waiting for dashboard to load'
+  wait_for_dashboard(driver)
 
-puts "Account\tMonth\tApp Name\tSubtotal"
+  puts "Account\tMonth\tApp Name\tSubtotal"
 
-$stderr.puts '  Dumping Team Bills: network'
-dump_team_bills('network', driver)
+  options[:teams].each do |team|
+    $stderr.puts "  Dumping Team Bills: #{team}"
+    dump_team_bills(team, driver)
+  end
 
-$stderr.puts '  Dumping Personal Bills'
-dump_personal_bills(driver)
+  $stderr.puts '  Dumping Personal Bills'
+  dump_personal_bills(driver)
 
-driver.quit
+  driver.quit
+end
+
+options = {
+  headless: true,
+  teams: [],
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} [options]"
+  opts.on('--[no-]headless', 'Run headlessly (default: true)') do |headless|
+    options[:headless] = headless
+  end
+  opts.on('-t [team]', 'Scrape team by name (can be provided multiple times)') do |team|
+    options[:teams] << team
+  end
+end.parse!
+
+scrape(options)
