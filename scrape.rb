@@ -1,3 +1,4 @@
+require 'dotenv'
 require 'selenium-webdriver'
 $stdout.sync = true
 
@@ -54,6 +55,8 @@ def dump_personal_bills(driver)
   end
 end
 
+Dotenv.load
+
 headless = true
 args = []
 args.push('headless') if headless
@@ -61,8 +64,8 @@ options = Selenium::WebDriver::Chrome::Options.new(args: args)
 
 driver = Selenium::WebDriver.for(:chrome, options: options)
 
-$stderr.puts 'Logging in...'
-log_in('infra@codeforamerica.org', ENV['HEROKU_PASSWORD'], driver)
+$stderr.puts "Logging in as #{ENV['HEROKU_USERNAME']}..."
+log_in(ENV['HEROKU_USERNAME'], ENV['HEROKU_PASSWORD'], driver)
 
 $stderr.puts '  waiting for dashboard to load'
 wait_for_dashboard(driver)
